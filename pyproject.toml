@@ -1,0 +1,46 @@
+[project]
+name = "sargraph"
+version = "0.1.0"
+description = "CLI that graphs sysstat SAR data (text or binary) to png, svg and jpg"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Paul Macdonnell", email = "pgmac@pgmac.net" }]
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.8",
+    "pandas>=2.2",
+    "typer>=0.12",
+]
+
+[project.scripts]
+sargraph = "sargraph.cli:main"
+
+[dependency-groups]
+dev = [
+    "pylint>=3.2",
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pylint.main]
+py-version = "3.11"
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pylint."messages control"]
+disable = ["missing-module-docstring"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

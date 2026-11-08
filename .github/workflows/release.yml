@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate tag
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+    steps:
+      - name: Check tag format
+        id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$ ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Invalid tag format: $TAG (expected vX.Y.Z or vX.Y.Z-rcN)"
+            exit 1
+          fi
+
+  release:
+    name: Build and release
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+
+      - name: Check tag matches pyproject version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(uv version --short)
+          if [[ "${TAG#v}" != "$version" && "${TAG#v}" != "$version"-rc* ]]; then
+            echo "Tag $TAG does not match pyproject version $version"
+            exit 1
+          fi
+
+      - name: Build wheel and sdist
+        run: uv build
+
+      - name: Generate checksums
+        working-directory: dist
+        run: sha256sum * > checksums.txt
+
+      - name: Get tag message
+        id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          {
+            echo "message<<EOF"
+            git tag -l --format='%(contents:subject)' "$TAG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
+        with:
+          name: ${{ steps.tag.outputs.message }}
+          files: dist/*
+          generate_release_notes: true
+          prerelease: ${{ needs.validate.outputs.prerelease }}

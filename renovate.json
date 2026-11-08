@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":disableDependencyDashboard",
+    ":semanticCommitsDisabled",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": ["dependencies"],
+  "schedule": ["before 9am on monday"],
+  "timezone": "Australia/Brisbane",
+  "packageRules": [
+    {
+      "description": "Group Python dev dependencies together",
+      "matchDepTypes": ["dependency-groups"],
+      "groupName": "Python dev dependencies"
+    }
+  ]
+}
